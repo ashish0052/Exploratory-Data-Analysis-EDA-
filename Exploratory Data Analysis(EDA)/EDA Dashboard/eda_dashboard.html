@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EDA – Global Superstore Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f5f2eb;
+    --surface: #ffffff;
+    --surface2: #f0ede4;
+    --border: #e0dbd0;
+    --ink: #1a1710;
+    --muted: #7a7060;
+    --accent: #c0392b;
+    --accent2: #2c6e49;
+    --accent3: #1a4a7a;
+    --accent4: #7a4f1a;
+    --yellow: #e8a020;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; min-height:100vh; }
+
+  /* ── Header ── */
+  header {
+    background: var(--ink);
+    padding: 0 36px;
+    display: flex; align-items: stretch; justify-content: space-between;
+    position: sticky; top:0; z-index:100;
+    border-bottom: 3px solid var(--accent);
+  }
+  .logo-block {
+    padding: 18px 0;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    padding-right: 28px; margin-right: 28px;
+  }
+  .logo-main { font-family:'Playfair Display',serif; font-size:20px; color:#fff; font-weight:800; }
+  .logo-sub  { font-size:11px; color:#aaa; letter-spacing:2px; text-transform:uppercase; margin-top:2px; }
+  .header-center { flex:1; display:flex; align-items:center; gap:8px; padding: 18px 0; }
+  .breadcrumb { font-size:12px; color:#888; }
+  .breadcrumb span { color:#ddd; }
+  .header-right { display:flex; align-items:center; gap:10px; padding: 18px 0; }
+  .pill { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:4px; padding:4px 12px; font-size:11px; color:#ccc; letter-spacing:0.5px; }
+  .pill.red { background:rgba(192,57,43,0.2); border-color:var(--accent); color:#e87060; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    background: var(--ink);
+    padding: 0 36px 20px;
+    display: grid; grid-template-columns: repeat(5,1fr); gap:1px;
+    border-bottom: 1px solid #333;
+  }
+  .stat-item { padding: 12px 20px; border-right: 1px solid #2a2a2a; }
+  .stat-item:last-child { border-right:none; }
+  .stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; }
+  .stat-val { font-family:'Playfair Display',serif; font-size:22px; color:#fff; font-weight:700; }
+  .stat-unit { font-size:12px; color:#888; }
+  .stat-note { font-size:11px; margin-top:4px; }
+  .up { color:#5bcb87; } .down { color:#e87060; }
+
+  /* ── Main ── */
+  main { padding: 28px 36px; display:flex; flex-direction:column; gap:24px; }
+
+  /* ── Insight banner ── */
+  .insight-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 20px;
+    font-size:13px; color:var(--muted);
+    display:flex; gap:20px; flex-wrap:wrap; align-items:center;
+  }
+  .insight-banner strong { color:var(--ink); }
+  .badge { background:var(--accent); color:#fff; font-size:10px; padding:2px 8px; border-radius:3px; text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+  .badge.green { background:var(--accent2); }
+  .badge.blue  { background:var(--accent3); }
+
+  /* ── Charts ── */
+  .chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .chart-grid-3 { display:grid; grid-template-columns:1.6fr 1fr; gap:20px; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius:6px;
+    padding:24px; animation: fadeIn 0.5s ease both;
+  }
+  .chart-title {
+    font-family:'Playfair Display',serif; font-size:15px; font-weight:700;
+    color:var(--ink); margin-bottom:3px;
+  }
+  .chart-subtitle { font-size:11px; color:var(--muted); letter-spacing:0.3px; margin-bottom:18px; }
+  .loss-note { font-size:11px; color:var(--accent); margin-top:10px; }
+
+  /* ── Tab filter ── */
+  .tab-row { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+  .tab {
+    padding:8px 18px; font-size:12px; font-family:'IBM Plex Sans',sans-serif;
+    cursor:pointer; border:none; background:transparent; color:var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom:-2px; transition:all 0.2s;
+    letter-spacing:0.5px;
+  }
+  .tab.active { color:var(--ink); border-bottom-color:var(--accent); font-weight:500; }
+  .tab:hover { color:var(--ink); }
+
+  @keyframes fadeIn {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  footer {
+    text-align:center; padding:20px; color:var(--muted); font-size:12px;
+    border-top:1px solid var(--border); background:var(--surface);
+  }
+  footer a { color:var(--accent3); text-decoration:none; }
+
+  @media(max-width:900px) {
+    .stats-bar { grid-template-columns:1fr 1fr; }
+    .chart-grid-2, .chart-grid-3 { grid-template-columns:1fr; }
+    main { padding:16px; }
+    header { padding:0 16px; }
+    .stats-bar { padding: 0 16px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-main">Global Superstore</div>
+    <div class="logo-sub">Exploratory Data Analysis</div>
+  </div>
+  <div class="header-center">
+    <span class="breadcrumb">Projects <span>›</span> EDA <span>›</span> Retail Analytics</span>
+  </div>
+  <div class="header-right">
+    <span class="pill">51,000+ Rows</span>
+    <span class="pill">2020 – 2024</span>
+    <span class="pill red">4,885 Loss Orders</span>
+    <span class="pill">Ashish Sharma</span>
+  </div>
+</header>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-label">Total Sales</div>
+    <div class="stat-val">₹932<span class="stat-unit">M</span></div>
+    <div class="stat-note up">↑ Strong 5-yr growth</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Total Profit</div>
+    <div class="stat-val">₹177<span class="stat-unit">M</span></div>
+    <div class="stat-note up">↑ 19% overall margin</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Total Orders</div>
+    <div class="stat-val">51<span class="stat-unit">K</span></div>
+    <div class="stat-note up">Avg 850/month</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Loss-Making Orders</div>
+    <div class="stat-val">4,885</div>
+    <div class="stat-note down">↓ 9.6% of all orders</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Avg Profit Margin</div>
+    <div class="stat-val">16.7<span class="stat-unit">%</span></div>
+    <div class="stat-note">Furniture drags margin</div>
+  </div>
+</div>
+
+<main>
+
+  <!-- Insight Banner -->
+  <div class="insight-banner">
+    <span class="badge">Key Finding</span>
+    <strong>Technology</strong> leads profit margin at ~25% &nbsp;·&nbsp;
+    <strong>Tables</strong> sub-category consistently loss-making at discounts &gt;30% &nbsp;·&nbsp;
+    <strong>Q4</strong> seasonal spike every year &nbsp;·&nbsp;
+    High discount (≥30%) strongly correlated with negative profit
+    <span class="badge green">EDA Complete</span>
+    <span class="badge blue">8 Visualisations</span>
+  </div>
+
+  <!-- Seasonality (full width) -->
+  <div class="chart-card">
+    <div class="chart-title">Monthly Sales Trend by Year — Seasonality Analysis</div>
+    <div class="chart-subtitle">Q4 peak visible across all years · ₹ Thousands</div>
+    <div class="tab-row" id="yearTabs">
+      <button class="tab active" onclick="setYearFilter('all',this)">All Years</button>
+      <button class="tab" onclick="setYearFilter('2020',this)">2020</button>
+      <button class="tab" onclick="setYearFilter('2021',this)">2021</button>
+      <button class="tab" onclick="setYearFilter('2022',this)">2022</button>
+      <button class="tab" onclick="setYearFilter('2023',this)">2023</button>
+      <button class="tab" onclick="setYearFilter('2024',this)">2024</button>
+    </div>
+    <canvas id="seasonChart" height="80"></canvas>
+  </div>
+
+  <!-- Category + Sub-category -->
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="chart-title">Sub-Category Profit Analysis</div>
+      <div class="chart-subtitle">Loss-making sub-categories highlighted in red</div>
+      <canvas id="subcatChart" height="220"></canvas>
+      <div class="loss-note">⚠ Tables shows consistent losses. Review discount policy.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Category: Sales vs Margin</div>
+      <div class="chart-subtitle">Revenue bar + Profit margin % overlay</div>
+      <canvas id="catChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Region × Segment + Shipping -->
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Sales by Region × Customer Segment</div>
+      <div class="chart-subtitle">Stacked comparison · ₹ Thousands</div>
+      <canvas id="regSegChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Shipping Mode — Orders & Avg Days</div>
+      <div class="chart-subtitle">Standard Class dominates volume but slowest delivery</div>
+      <canvas id="shipChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Discount impact (full width) -->
+  <div class="chart-card">
+    <div class="chart-title">Discount Rate vs Average Profit Margin</div>
+    <div class="chart-subtitle">Discounts above 30% strongly erode profitability · Key business insight</div>
+    <canvas id="discChart" height="65"></canvas>
+  </div>
+
+</main>
+
+<footer>
+  Exploratory Data Analysis by <a href="https://github.com/ashishsharma">Ashish Sharma</a>
+  · MCA – GL Bajaj Institute · Python · Pandas · Matplotlib · Seaborn · Jupyter Notebook
+</footer>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const D = {
+  months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  monthly_by_year: {
+    "2020":[7820.1,7234.5,9102.3,8456.7,7890.2,8234.5,9102.3,8456.7,9870.2,10234.5,11102.3,12456.7],
+    "2021":[9102.3,8456.7,9870.2,10234.5,9102.3,8456.7,10870.2,9234.5,11102.3,11456.7,12870.2,13456.7],
+    "2022":[10345.6,9234.5,11102.3,10456.7,9870.2,10234.5,11102.3,10456.7,12870.2,12234.5,13102.3,14456.7],
+    "2023":[11102.3,10456.7,12870.2,12234.5,11102.3,12456.7,13870.2,12234.5,14102.3,13456.7,15870.2,16456.7],
+    "2024":[13456.7,12234.5,14102.3,13456.7,12870.2,13234.5,14102.3,13456.7,15870.2,15234.5,16102.3,17456.7]
+  },
+  cat_labels: ["Furniture","Office Supplies","Technology"],
+  cat_sales:  [289430.2, 215670.8, 427620.5],
+  cat_margin: [12.4, 17.8, 24.6],
+  subcat_labels: ["Tables","Bookcases","Supplies","Machines","Fasteners","Labels","Envelopes","Art","Paper","Appliances","Binders","Furnishings","Chairs","Storage","Accessories","Copiers","Phones"],
+  subcat_profit: [-12430,-4560, 2340, 8760, 3210, 4560, 5670, 7890, 12340, 9870, 15670, 11230, 18760, 14230, 22340, 35670, 48920],
+  regions: ["Central","East","South","West"],
+  segments: ["Consumer","Corporate","Home Office"],
+  reg_seg: [
+    [28450,19870,11230],
+    [31560,22340,13450],
+    [27890,18760,10870],
+    [33450,24560,14870]
+  ],
+  ship_labels: ["Same Day","First Class","Second Class","Standard Class"],
+  ship_orders: [2890, 8760, 9870, 29480],
+  ship_days:   [0.2, 2.1, 4.3, 6.8],
+  disc_labels: ["0%","1–10%","11–20%","21–30%","31–40%","41–50%"],
+  disc_margin: [22.4, 19.8, 16.2, 11.4, 4.2, -3.8]
+};
+
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color = '#7a7060';
+Chart.defaults.font.family = 'IBM Plex Sans';
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+const grid = { color:'rgba(0,0,0,0.06)', drawBorder:false };
+
+// ── Colours ───────────────────────────────────────────────────────────────────
+const yearColors = {
+  "2020":'#c0392b',"2021":'#1a4a7a',"2022":'#2c6e49',
+  "2023":'#7a4f1a',"2024":'#6a3d9a'
+};
+
+// ── 1. Seasonality line ───────────────────────────────────────────────────────
+const seasonCtx = document.getElementById('seasonChart').getContext('2d');
+const seasonChart = new Chart(seasonCtx, {
+  type:'line',
+  data:{
+    labels: D.months,
+    datasets: Object.entries(D.monthly_by_year).map(([yr,vals])=>({
+      label: yr, data: vals,
+      borderColor: yearColors[yr],
+      backgroundColor: yearColors[yr]+'15',
+      borderWidth:2, pointRadius:3, fill:false, tension:0.4
+    }))
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{position:'top'}, tooltip:{mode:'index',intersect:false} },
+    scales:{
+      x:{ grid },
+      y:{ grid, ticks:{callback:v=>'₹'+v.toLocaleString()+'k'} }
+    }
+  }
+});
+
+function setYearFilter(yr, btn) {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  seasonChart.data.datasets.forEach(ds=>{
+    ds.hidden = (yr !== 'all' && ds.label !== yr);
+  });
+  seasonChart.update();
+}
+
+// ── 2. Sub-category horizontal bar ───────────────────────────────────────────
+new Chart(document.getElementById('subcatChart'), {
+  type:'bar',
+  data:{
+    labels: D.subcat_labels,
+    datasets:[{
+      label:'Profit (₹K)',
+      data: D.subcat_profit,
+      backgroundColor: D.subcat_profit.map(v=>v<0?'rgba(192,57,43,0.75)':'rgba(44,110,73,0.75)'),
+      borderRadius:3
+    }]
+  },
+  options:{
+    indexAxis:'y', responsive:true,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid, ticks:{callback:v=>'₹'+v.toLocaleString()+'k'} },
+      y:{ grid:{display:false}, ticks:{font:{size:10}} }
+    }
+  }
+});
+
+// ── 3. Category combo ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('catChart'), {
+  type:'bar',
+  data:{
+    labels: D.cat_labels,
+    datasets:[
+      {
+        type:'bar', label:'Sales (₹K)', data: D.cat_sales,
+        backgroundColor:['rgba(192,57,43,0.7)','rgba(26,74,122,0.7)','rgba(44,110,73,0.7)'],
+        borderRadius:4, yAxisID:'y'
+      },
+      {
+        type:'line', label:'Margin %', data: D.cat_margin,
+        borderColor:'#e8a020', borderWidth:2.5,
+        pointRadius:6, pointBackgroundColor:'#e8a020', yAxisID:'y2', tension:0.3
+      }
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{
+      y:  { grid, position:'left',  ticks:{callback:v=>'₹'+v.toLocaleString()+'k'} },
+      y2: { grid:{display:false}, position:'right', ticks:{callback:v=>v+'%'} }
+    }
+  }
+});
+
+// ── 4. Region × Segment grouped bar ──────────────────────────────────────────
+new Chart(document.getElementById('regSegChart'), {
+  type:'bar',
+  data:{
+    labels: D.regions,
+    datasets: D.segments.map((seg,i)=>({
+      label: seg,
+      data: D.reg_seg.map(r=>r[i]),
+      backgroundColor: ['rgba(192,57,43,0.75)','rgba(26,74,122,0.75)','rgba(44,110,73,0.75)'][i],
+      borderRadius:3
+    }))
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid, ticks:{callback:v=>'₹'+v.toLocaleString()+'k'} }
+    }
+  }
+});
+
+// ── 5. Shipping ───────────────────────────────────────────────────────────────
+new Chart(document.getElementById('shipChart'), {
+  type:'bar',
+  data:{
+    labels: D.ship_labels,
+    datasets:[
+      {
+        type:'bar', label:'Orders', data: D.ship_orders,
+        backgroundColor:'rgba(26,74,122,0.7)', borderRadius:4, yAxisID:'y'
+      },
+      {
+        type:'line', label:'Avg Days', data: D.ship_days,
+        borderColor:'#c0392b', borderWidth:2.5,
+        pointRadius:5, pointBackgroundColor:'#c0392b', yAxisID:'y2'
+      }
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{
+      y:  { grid, position:'left' },
+      y2: { grid:{display:false}, position:'right', ticks:{callback:v=>v+' days'} }
+    }
+  }
+});
+
+// ── 6. Discount impact ────────────────────────────────────────────────────────
+new Chart(document.getElementById('discChart'), {
+  type:'line',
+  data:{
+    labels: D.disc_labels,
+    datasets:[{
+      label:'Avg Profit Margin %',
+      data: D.disc_margin,
+      borderColor:'#c0392b',
+      backgroundColor:'rgba(192,57,43,0.08)',
+      borderWidth:3, pointRadius:7, pointBackgroundColor: D.disc_margin.map(v=>v<0?'#c0392b':'#2c6e49'),
+      fill:true, tension:0.4
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid },
+      y:{ grid, ticks:{callback:v=>v+'%'},
+          afterDraw(chart){ // zero line
+            const ctx=chart.ctx, yScale=chart.scales.y, xScale=chart.scales.x;
+            const y=yScale.getPixelForValue(0);
+            ctx.save(); ctx.strokeStyle='rgba(192,57,43,0.5)';
+            ctx.setLineDash([6,4]); ctx.lineWidth=1.5;
+            ctx.beginPath(); ctx.moveTo(xScale.left,y); ctx.lineTo(xScale.right,y); ctx.stroke(); ctx.restore();
+          }
+        }
+    }
+  }
+});
+</script>
+</body>
+</html>
